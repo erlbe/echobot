@@ -9,11 +9,33 @@ var botConnectorOptions = {
 
 // Create bot
 var bot = new builder.BotConnectorBot(botConnectorOptions);
-bot.add('/', function (session) {
-    
-    //respond with user's message
-    session.send("You said " + session.message.text);
-});
+bot.add('/', [
+    function (session, args, next) {
+        if (!session.userData.name || !session.userData.human) {
+            session.beginDialog('/profile');
+        }
+        else {
+            next();
+        }
+    },
+    function (session, results) {
+        session.send('Hello ' + session.userData.name +", it is " + session.userData.human + " that you are a human.");
+    }
+]);
+bot.add('/profile', [
+    function (session) {
+        builder.Prompts.text(session, "Hi, what is your name?");
+    },
+    function (session, nameResults) {
+        session.userData.name = nameResults.response;
+        builder.Prompts.confirm(session, "You are a human, right " + session.userData.name + "?");
+    },
+    function (session, humanResults) {
+        // Not working atm...
+        session.userData.human = humanResults.response;
+        session.endDialog();
+    }
+]);
 
 // Setup Restify Server
 var server = restify.createServer();
